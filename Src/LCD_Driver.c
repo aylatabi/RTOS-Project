@@ -8,19 +8,19 @@
 
 #include "LCD_Driver.h"
 
-static uint16_t runs=0;
+static uint16_t		 runs = 0;
 extern const uint8_t my_image[];
 
-static LTDC_HandleTypeDef hltdc;
-static RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
-static FONT_t *LCD_Currentfonts;
-static uint16_t CurrentTextColor   = 0xFFFF;
+static LTDC_HandleTypeDef		hltdc;
+static RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
+static FONT_t *					LCD_Currentfonts;
+static uint16_t					CurrentTextColor = 0xFFFF;
 
 static SPI_HandleTypeDef SpiHandle;
-uint32_t SpiTimeout = SPI_TIMEOUT_MAX; /*<! Value of Timeout when SPI communication fails */
+uint32_t				 SpiTimeout = SPI_TIMEOUT_MAX; /*<! Value of Timeout when SPI communication fails */
 
 //Someone from STM said it was "often accessed" a 1-dim array, and not a 2d array. However you still access it like a 2dim array,  using fb[y*W+x] instead of fb[y][x].
-uint16_t frameBuffer[LCD_PIXEL_WIDTH*LCD_PIXEL_HEIGHT] = {0};			//16bpp pixel format.
+uint16_t frameBuffer[LCD_PIXEL_WIDTH * LCD_PIXEL_HEIGHT] = {0};	 //16bpp pixel format.
 
 //static void MX_LTDC_Init(void);
 //static void MX_SPI5_Init(void);
@@ -29,22 +29,21 @@ static void SPI_Error(void);
 
 /* Provided Functions and API  - MOTIFY ONLY WITH EXTREME CAUTION!!! */
 
-void LCD_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStructure;
+void LCD_GPIO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStructure;
 
-  /* Enable the LTDC clock */
-  __HAL_RCC_LTDC_CLK_ENABLE();
+	/* Enable the LTDC clock */
+	__HAL_RCC_LTDC_CLK_ENABLE();
 
-  /* Enable GPIO clock */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOG_CLK_ENABLE();
+	/* Enable GPIO clock */
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+	__HAL_RCC_GPIOF_CLK_ENABLE();
+	__HAL_RCC_GPIOG_CLK_ENABLE();
 
-  /* GPIO Config
+	/* GPIO Config
    *
     LCD pins
    LCD_TFT R2 <-> PC.10
@@ -71,51 +70,49 @@ void LCD_GPIO_Init(void)
    LCD_TFT DE   <->  PF.10
   */
 
-  /* GPIOA configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_6 |
-                           GPIO_PIN_11 | GPIO_PIN_12;
-  GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
-  GPIO_InitStructure.Alternate= GPIO_AF14_LTDC;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+	/* GPIOA configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_6 |
+							 GPIO_PIN_11 | GPIO_PIN_12;
+	GPIO_InitStructure.Mode		 = GPIO_MODE_AF_PP;
+	GPIO_InitStructure.Pull		 = GPIO_NOPULL;
+	GPIO_InitStructure.Speed	 = GPIO_SPEED_FAST;
+	GPIO_InitStructure.Alternate = GPIO_AF14_LTDC;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 
- /* GPIOB configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_8 | \
-                           GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+	/* GPIOB configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_8 |
+							 GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
- /* GPIOC configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_10;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
+	/* GPIOC configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_10;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
 
- /* GPIOD configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_3 | GPIO_PIN_6;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
+	/* GPIOD configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_3 | GPIO_PIN_6;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
 
- /* GPIOF configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_10;
-  HAL_GPIO_Init(GPIOF, &GPIO_InitStructure);
+	/* GPIOF configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_10;
+	HAL_GPIO_Init(GPIOF, &GPIO_InitStructure);
 
- /* GPIOG configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_6 | GPIO_PIN_7 | \
-                           GPIO_PIN_11;
-  HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
+	/* GPIOG configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_6 | GPIO_PIN_7 |
+							 GPIO_PIN_11;
+	HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 
-  /* GPIOB configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_0 | GPIO_PIN_1;
-  GPIO_InitStructure.Alternate= GPIO_AF9_LTDC;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+	/* GPIOB configuration */
+	GPIO_InitStructure.Pin		 = GPIO_PIN_0 | GPIO_PIN_1;
+	GPIO_InitStructure.Alternate = GPIO_AF9_LTDC;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-  /* GPIOG configuration */
-  GPIO_InitStructure.Pin = GPIO_PIN_10 | GPIO_PIN_12;
-  HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
+	/* GPIOG configuration */
+	GPIO_InitStructure.Pin = GPIO_PIN_10 | GPIO_PIN_12;
+	HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 }
 
-
-void LTCD__Init(void)
-{
-  	hltdc.Instance = LTDC;
+void LTCD__Init(void) {
+	hltdc.Instance = LTDC;
 	/* Configure horizontal synchronization width */
 	hltdc.Init.HorizontalSync = ILI9341_HSYNC;
 	/* Configure vertical synchronization height */
@@ -133,8 +130,8 @@ void LTCD__Init(void)
 	/* Configure total height */
 	hltdc.Init.TotalHeigh = 327;
 	/* Configure R,G,B component values for LCD background color */
-	hltdc.Init.Backcolor.Red = 0;
-	hltdc.Init.Backcolor.Blue = 0;
+	hltdc.Init.Backcolor.Red   = 0;
+	hltdc.Init.Backcolor.Blue  = 0;
 	hltdc.Init.Backcolor.Green = 0;
 
 	/* LCD clock configuration */
@@ -144,9 +141,9 @@ void LTCD__Init(void)
 	/* LTDC clock frequency = PLLLCDCLK / LTDC_PLLSAI_DIVR_8 = 48/4 = 6Mhz */
 
 	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
-	PeriphClkInitStruct.PLLSAI.PLLSAIN = 192;
-	PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;
-	PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_8;
+	PeriphClkInitStruct.PLLSAI.PLLSAIN		 = 192;
+	PeriphClkInitStruct.PLLSAI.PLLSAIR		 = 4;
+	PeriphClkInitStruct.PLLSAIDivR			 = RCC_PLLSAIDIVR_8;
 	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
 	/* Polarity */
 	hltdc.Init.HSPolarity = LTDC_HSPOLARITY_AL;
@@ -156,104 +153,88 @@ void LTCD__Init(void)
 
 	LCD_GPIO_Init();
 
-	if (HAL_LTDC_Init(&hltdc) != HAL_OK)
-	 {
-	   LCD_Error_Handler();
-	 }
+	if (HAL_LTDC_Init(&hltdc) != HAL_OK) {
+		LCD_Error_Handler();
+	}
 
 	ili9341_Init();
 }
 
-void LTCD_Layer_Init(uint8_t LayerIndex)
-{
-  LTDC_LayerCfgTypeDef  pLayerCfg;
+void LTCD_Layer_Init(uint8_t LayerIndex) {
+	LTDC_LayerCfgTypeDef pLayerCfg;
 
-	pLayerCfg.WindowX0 = 0;	//Configures the Window HORZ START Position.
-	pLayerCfg.WindowX1 = LCD_PIXEL_WIDTH;	//Configures the Window HORZ Stop Position.
-	pLayerCfg.WindowY0 = 0;	//Configures the Window vertical START Position.
-	pLayerCfg.WindowY1 = LCD_PIXEL_HEIGHT;	//Configures the Window vertical Stop Position.
-	pLayerCfg.PixelFormat = LCD_PIXEL_FORMAT_1;  //INCORRECT PIXEL FORMAT WILL GIVE WEIRD RESULTS!! IT MAY STILL WORK FOR 1/2 THE DISPLAY!!! //This is our buffers pixel format. 2 bytes for each pixel
-	pLayerCfg.Alpha = 255;
-	pLayerCfg.Alpha0 = 0;
+	pLayerCfg.WindowX0		  = 0;					 //Configures the Window HORZ START Position.
+	pLayerCfg.WindowX1		  = LCD_PIXEL_WIDTH;	 //Configures the Window HORZ Stop Position.
+	pLayerCfg.WindowY0		  = 0;					 //Configures the Window vertical START Position.
+	pLayerCfg.WindowY1		  = LCD_PIXEL_HEIGHT;	 //Configures the Window vertical Stop Position.
+	pLayerCfg.PixelFormat	  = LCD_PIXEL_FORMAT_1;	 //INCORRECT PIXEL FORMAT WILL GIVE WEIRD RESULTS!! IT MAY STILL WORK FOR 1/2 THE DISPLAY!!! //This is our buffers pixel format. 2 bytes for each pixel
+	pLayerCfg.Alpha			  = 255;
+	pLayerCfg.Alpha0		  = 0;
 	pLayerCfg.BlendingFactor1 = LTDC_BLENDING_FACTOR1_CA;
 	pLayerCfg.BlendingFactor2 = LTDC_BLENDING_FACTOR2_CA;
-	if (LayerIndex == 0){
+	if (LayerIndex == 0) {
 		pLayerCfg.FBStartAdress = (uintptr_t)frameBuffer;
 	}
-	pLayerCfg.ImageWidth = LCD_PIXEL_WIDTH;
-	pLayerCfg.ImageHeight = LCD_PIXEL_HEIGHT;
-	pLayerCfg.Backcolor.Blue = 0;
+	pLayerCfg.ImageWidth	  = LCD_PIXEL_WIDTH;
+	pLayerCfg.ImageHeight	  = LCD_PIXEL_HEIGHT;
+	pLayerCfg.Backcolor.Blue  = 0;
 	pLayerCfg.Backcolor.Green = 0;
-	pLayerCfg.Backcolor.Red = 0;
-	if (HAL_LTDC_ConfigLayer(&hltdc, &pLayerCfg, LayerIndex) != HAL_OK)
-	{
+	pLayerCfg.Backcolor.Red	  = 0;
+	if (HAL_LTDC_ConfigLayer(&hltdc, &pLayerCfg, LayerIndex) != HAL_OK) {
 		LCD_Error_Handler();
 	}
-
 }
 
-// Draws a single pixel, should be useds only within this fileset and should not be seen by external clients. 
-void LCD_Draw_Pixel(uint16_t x, uint16_t y, uint16_t color)
-{
-	if (y*LCD_PIXEL_WIDTH + x >= LCD_PIXEL_WIDTH*LCD_PIXEL_HEIGHT)
-		for(;;);
-	frameBuffer[y*LCD_PIXEL_WIDTH+x] = color;  //You cannot do x*y to set the pixel.
-
+// Draws a single pixel, should be useds only within this fileset and should not be seen by external clients.
+void LCD_Draw_Pixel(uint16_t x, uint16_t y, uint16_t color) {
+	if (y * LCD_PIXEL_WIDTH + x >= LCD_PIXEL_WIDTH * LCD_PIXEL_HEIGHT)
+		for (;;)
+			;
+	frameBuffer[y * LCD_PIXEL_WIDTH + x] = color;  //You cannot do x*y to set the pixel.
 }
 
-void LCD_DrawChar(uint16_t Xpos, uint16_t Ypos, const uint16_t *c)
-{
-  uint32_t index = 0, counter = 0;
-  for(index = 0; index < LCD_Currentfonts->Height; index++)
-  {
-    for(counter = 0; counter < LCD_Currentfonts->Width; counter++)
-    {
-      if((((c[index] & ((0x80 << ((LCD_Currentfonts->Width / 12 ) * 8 ) ) >> counter)) == 0x00) && (LCD_Currentfonts->Width <= 12)) || (((c[index] & (0x1 << counter)) == 0x00)&&(LCD_Currentfonts->Width > 12 )))
-      {
-         //Background If want to overrite text under then add a set color here
-      }
-      else
-      {
-    	  LCD_Draw_Pixel(counter + Xpos,index + Ypos,CurrentTextColor);
-      }
-    }
-  }
+void LCD_DrawChar(uint16_t Xpos, uint16_t Ypos, const uint16_t *c) {
+	uint32_t index = 0, counter = 0;
+	for (index = 0; index < LCD_Currentfonts->Height; index++) {
+		for (counter = 0; counter < LCD_Currentfonts->Width; counter++) {
+			if ((((c[index] & ((0x80 << ((LCD_Currentfonts->Width / 12) * 8)) >> counter)) == 0x00) && (LCD_Currentfonts->Width <= 12)) || (((c[index] & (0x1 << counter)) == 0x00) && (LCD_Currentfonts->Width > 12))) {
+				//Background If want to overrite text under then add a set color here
+			} else {
+				LCD_Draw_Pixel(counter + Xpos, index + Ypos, CurrentTextColor);
+			}
+		}
+	}
 }
 
 // Displays Char
-void LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii)
-{
-  Ascii -= 32;
-  LCD_DrawChar(Xpos, Ypos, &LCD_Currentfonts->table[Ascii * LCD_Currentfonts->Height]);
+void LCD_DisplayChar(uint16_t Xpos, uint16_t Ypos, uint8_t Ascii) {
+	Ascii -= 32;
+	LCD_DrawChar(Xpos, Ypos, &LCD_Currentfonts->table[Ascii * LCD_Currentfonts->Height]);
 }
 
-void LCD_DisplayString(uint16_t Xpos, uint16_t Ypos, char *string){
-	if(string == NULL) return;
+void LCD_DisplayString(uint16_t Xpos, uint16_t Ypos, char *string) {
+	if (string == NULL) return;
 	uint16_t offset = 0;
-	while(*string != '\0'){
-		LCD_DisplayChar(Xpos+offset, Ypos, *string);
+	while (*string != '\0') {
+		LCD_DisplayChar(Xpos + offset, Ypos, *string);
 		string++;
-		offset+=15;
+		offset += 15;
 	}
 }
 
 //Displays Number, size is the number of digits in the number you want to Display
-void LCD_DisplayNumber(uint16_t Xpos, uint16_t Ypos, uint16_t Number){
-
+void LCD_DisplayNumber(uint16_t Xpos, uint16_t Ypos, uint16_t Number) {
 	uint8_t numDigits = 0;
-	if(Number == 0){
-		LCD_DisplayChar(Xpos,Ypos,'0');
+	if (Number == 0) {
+		LCD_DisplayChar(Xpos, Ypos, '0');
 		return;
-	}
-	else{
+	} else {
 		uint16_t temp = Number;
 		while (temp > 0) {
 			temp /= 10;
 			numDigits++;
 		}
 	}
-
-
 
 	uint8_t num_ascii[numDigits];
 	// Convert each digit to a character and print it with standard spacing.
@@ -265,172 +246,133 @@ void LCD_DisplayNumber(uint16_t Xpos, uint16_t Ypos, uint16_t Number){
 
 	//print numbers with offset on x-axis
 	uint16_t offset = 0;
-	for(int i =0; i<numDigits; i++){
-		LCD_DisplayChar(Xpos+offset,Ypos,num_ascii[i]);
-		offset+=12;
+	for (int i = 0; i < numDigits; i++) {
+		LCD_DisplayChar(Xpos + offset, Ypos, num_ascii[i]);
+		offset += 12;
 	}
-
 }
 
-void LCD_SetTextColor(uint16_t Color)
-{
-  CurrentTextColor = Color;
+void LCD_SetTextColor(uint16_t Color) {
+	CurrentTextColor = Color;
 }
 
-void LCD_SetFont(FONT_t *fonts)
-{
-  LCD_Currentfonts = fonts;
+void LCD_SetFont(FONT_t *fonts) {
+	LCD_Currentfonts = fonts;
 }
 
 // Draw Circle Filled
-void LCD_Draw_Circle_Fill(uint16_t Xpos, uint16_t Ypos, uint16_t radius, uint16_t color)
-{
-  for(int16_t y=-radius; y<=radius; y++)
-    {
-        for(int16_t x=-radius; x<=radius; x++)
-        {
-            if(x*x+y*y <= radius*radius)
-            {
-            	LCD_Draw_Pixel(x+Xpos, y+Ypos, color);
-            }
-        }
-    }
+void LCD_Draw_Circle_Fill(uint16_t Xpos, uint16_t Ypos, uint16_t radius, uint16_t color) {
+	for (int16_t y = -radius; y <= radius; y++) {
+		for (int16_t x = -radius; x <= radius; x++) {
+			if (x * x + y * y <= radius * radius) {
+				LCD_Draw_Pixel(x + Xpos, y + Ypos, color);
+			}
+		}
+	}
 }
-
-
 
 // Draw Vertical Line
-void LCD_Draw_Vertical_Line(uint16_t y, uint16_t x, uint16_t len, uint16_t color)
-{
-  for (uint16_t i = 0; i < len; i++)
-  {
-	  LCD_Draw_Pixel(x + i, y, color);
-  }
+void LCD_Draw_Vertical_Line(uint16_t y, uint16_t x, uint16_t len, uint16_t color) {
+	for (uint16_t i = 0; i < len; i++) {
+		LCD_Draw_Pixel(x + i, y, color);
+	}
 }
 
-void LCD_Draw_Horizontal_Line(uint16_t y, uint16_t x, uint16_t len, uint16_t color)
-{
-  for (uint16_t i = 0; i < len; i++)
-  {
-	  LCD_Draw_Pixel(x, y + i, color);
-  }
+void LCD_Draw_Horizontal_Line(uint16_t y, uint16_t x, uint16_t len, uint16_t color) {
+	for (uint16_t i = 0; i < len; i++) {
+		LCD_Draw_Pixel(x, y + i, color);
+	}
 }
 
-void LCD_Clear(uint8_t LayerIndex, uint16_t Color)
-{
-  if (LayerIndex == 0){
-		for (uint32_t i = 0; i < LCD_PIXEL_WIDTH * LCD_PIXEL_HEIGHT; i++){
+void LCD_Clear(uint8_t LayerIndex, uint16_t Color) {
+	if (LayerIndex == 0) {
+		for (uint32_t i = 0; i < LCD_PIXEL_WIDTH * LCD_PIXEL_HEIGHT; i++) {
 			frameBuffer[i] = Color;
 		}
 	}
 }
 
-void LCD_Draw_Force_Shield(uint16_t center_x)
-{
+void LCD_Draw_Force_Shield(uint16_t center_x) {
 	int radius = 25;
 
-	 for (int dx = -radius; dx <= radius; dx++)
-	 {
+	for (int dx = -radius; dx <= radius; dx++) {
 		int dy_squared = radius * radius - dx * dx;
-		if (dy_squared >= 0)
-		{
+		if (dy_squared >= 0) {
 			int y_offset = (int)sqrtf((float)dy_squared);
 
 			LCD_Draw_Pixel(25 + y_offset, center_x + dx, LCD_COLOR_RED);
 			LCD_Draw_Pixel(25 + y_offset + 1, center_x + dx, 0xfc00);
 			LCD_Draw_Pixel(25 + y_offset + 2, center_x + dx, 0xfd80);
-
 		}
 	}
-
 }
 
-void LCD_Draw_Prisoner(uint16_t position)
-{
+void LCD_Draw_Prisoner(uint16_t position) {
 	int x_diff = 3;
 	int y_diff = 13;
-	for (int i = 0; i < 20; i ++)
-	{
-		int x = 37 + x_diff * i/20;
-		int y = 160 + y_diff * i/20;
-		LCD_Draw_Pixel(y,position + x, 0xf818);
-		LCD_Draw_Pixel(y,position + x + 1, 0xf818);
-		LCD_Draw_Pixel(y,position + x + 2, 0xf818);
+	for (int i = 0; i < 20; i++) {
+		int x = 37 + x_diff * i / 20;
+		int y = 160 + y_diff * i / 20;
+		LCD_Draw_Pixel(y, position + x, 0xf818);
+		LCD_Draw_Pixel(y, position + x + 1, 0xf818);
+		LCD_Draw_Pixel(y, position + x + 2, 0xf818);
 	}
 
-	for (int i = 0; i < 20; i ++)
-	{
-		int x = 40 + x_diff * i/20;
-		int y = 173 - y_diff * i/20;
-		LCD_Draw_Pixel(y,position + x, 0xf818);
-		LCD_Draw_Pixel(y,position + x + 1, 0x057e);
-		LCD_Draw_Pixel(y,position + x + 2, 0xf818);
+	for (int i = 0; i < 20; i++) {
+		int x = 40 + x_diff * i / 20;
+		int y = 173 - y_diff * i / 20;
+		LCD_Draw_Pixel(y, position + x, 0xf818);
+		LCD_Draw_Pixel(y, position + x + 1, 0x057e);
+		LCD_Draw_Pixel(y, position + x + 2, 0xf818);
 	}
 
-
-	LCD_Draw_Circle_Fill(175,position + 40, 2, 0xd81f);
-
+	LCD_Draw_Circle_Fill(175, position + 40, 2, 0xd81f);
 }
 
-void LCD_Draw_Castle_Damage(uint16_t damage)
-{
-
+void LCD_Draw_Castle_Damage(uint16_t damage) {
 	LCD_Draw_Horizontal_Line(250, 220, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(250, 210, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(250, 210, 10, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(300, 210, 10, LCD_COLOR_BLACK);
 
-	for (uint16_t i = 251; i <= (249 + damage); i ++)
-	{
-		for (int j = 211; j < 220; j++)
-		{
+	for (uint16_t i = 251; i <= (249 + damage); i++) {
+		for (int j = 211; j < 220; j++) {
 			LCD_Draw_Pixel(j, i, LCD_COLOR_RED);
 		}
 	}
 }
 
-void LCD_Draw_Capasitor_Charge(uint16_t charge)
-{
-
+void LCD_Draw_Capasitor_Charge(uint16_t charge) {
 	LCD_Draw_Horizontal_Line(170, 220, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(170, 210, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(170, 210, 10, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(220, 210, 10, LCD_COLOR_BLACK);
 
-	for (uint16_t i = 171; i <= (169 + charge); i ++)
-	{
-		for (int j = 211; j < 220; j++)
-		{
+	for (uint16_t i = 171; i <= (169 + charge); i++) {
+		for (int j = 211; j < 220; j++) {
 			LCD_Draw_Pixel(j, i, LCD_COLOR_BLUE);
 		}
 	}
 
-	for (int i = 1; i < 10; i++)
-	{
+	for (int i = 1; i < 10; i++) {
 		LCD_Draw_Pixel(210 + i, 200, 0xfea0);
 	}
 }
 
-void LCD_Draw_Platform_Damage(uint16_t damage)
-{
-
+void LCD_Draw_Platform_Damage(uint16_t damage) {
 	LCD_Draw_Horizontal_Line(100, 220, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(100, 210, 50, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(100, 210, 10, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(150, 210, 10, LCD_COLOR_BLACK);
 
-	for (uint16_t i = 101; i <= (99 + damage); i ++)
-	{
-		for (int j = 211; j < 220; j++)
-		{
+	for (uint16_t i = 101; i <= (99 + damage); i++) {
+		for (int j = 211; j < 220; j++) {
 			LCD_Draw_Pixel(j, i, 0x07ea);
 		}
 	}
-
 }
 
-void LCD_Draw_Castle()
-{
+void LCD_Draw_Castle() {
 	LCD_Draw_Vertical_Line(80, 160, 40, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(1, 160, 80, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(1, 200, 80, LCD_COLOR_BLACK);
@@ -439,171 +381,140 @@ void LCD_Draw_Castle()
 	LCD_Draw_Vertical_Line(45, 160, 20, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(35, 180, 10, LCD_COLOR_BLACK);
 
-
 	LCD_Draw_Vertical_Line(310, 1, 230, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(315, 1, 230, LCD_COLOR_BLACK);
 
-	for (int i = 1; i < 10; i ++)
-	{
-		LCD_Draw_Pixel(200 + 2*i, i, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(200 + 2*i, i + 20, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(200 + 2*i, i + 40, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(200 + 2*i, i + 60, LCD_COLOR_BLACK);
+	for (int i = 1; i < 10; i++) {
+		LCD_Draw_Pixel(200 + 2 * i, i, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(200 + 2 * i, i + 20, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(200 + 2 * i, i + 40, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(200 + 2 * i, i + 60, LCD_COLOR_BLACK);
 	}
 
-	for (int i = 1; i < 10; i ++)
-	{
-		LCD_Draw_Pixel(220 - 2*i, 10+i, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(220 - 2*i, 30+i, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(220 - 2*i, 50+i, LCD_COLOR_BLACK);
-		LCD_Draw_Pixel(220 - 2*i, 70+i, LCD_COLOR_BLACK);
+	for (int i = 1; i < 10; i++) {
+		LCD_Draw_Pixel(220 - 2 * i, 10 + i, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(220 - 2 * i, 30 + i, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(220 - 2 * i, 50 + i, LCD_COLOR_BLACK);
+		LCD_Draw_Pixel(220 - 2 * i, 70 + i, LCD_COLOR_BLACK);
 	}
 
-	for (int i = 30; i <= 80; i++)
-	{
+	for (int i = 30; i <= 80; i++) {
 		int y = 120 + (int)((i - 30) * 0.8);
 		LCD_Draw_Pixel(y, i, LCD_COLOR_BLACK);
 	}
 
-
 	LCD_Draw_Vertical_Line(30, 1, 119, LCD_COLOR_BLACK);
 
-
-	 for (int x = 30; x <= 310; x++) {
-		float angle = (x - 30) * 2.0f * 3.14159265f * 6/ (310 - 30);
-		int y = 13 + (int)(3 * sinf(angle));
+	for (int x = 30; x <= 310; x++) {
+		float angle = (x - 30) * 2.0f * 3.14159265f * 6 / (310 - 30);
+		int	  y		= 13 + (int)(3 * sinf(angle));
 		LCD_Draw_Pixel(y, x, 0x9b40);
 		LCD_Draw_Pixel(y - 2, x, 0x9b40);
 		LCD_Draw_Pixel(y - 4, x, 0x7a80);
 		LCD_Draw_Pixel(y - 6, x, 0xc400);
 		LCD_Draw_Pixel(y - 8, x, 0xc400);
 	}
-
 }
 
-
-void chunk1(int16_t x, int16_t y, int16_t hit_castle_change)
-{
+void chunk1(int16_t x, int16_t y, int16_t hit_castle_change) {
 	int16_t half = 0;
 	if (hit_castle_change != 0) half = hit_castle_change / 2;
 
 	LCD_Draw_Vertical_Line(x + hit_castle_change, y + half, 5, LCD_COLOR_BLACK);
-	LCD_Draw_Vertical_Line(x + 5 + hit_castle_change, y+ half, 5, LCD_COLOR_BLACK);
-	LCD_Draw_Horizontal_Line(x + hit_castle_change, y+ half, 5, LCD_COLOR_BLACK);
-	LCD_Draw_Horizontal_Line(x + hit_castle_change, y+5+ half, 5, LCD_COLOR_BLACK);
-
+	LCD_Draw_Vertical_Line(x + 5 + hit_castle_change, y + half, 5, LCD_COLOR_BLACK);
+	LCD_Draw_Horizontal_Line(x + hit_castle_change, y + half, 5, LCD_COLOR_BLACK);
+	LCD_Draw_Horizontal_Line(x + hit_castle_change, y + 5 + half, 5, LCD_COLOR_BLACK);
 }
 
-
-
-void chunk2(int16_t x, int16_t y, int16_t hit_castle_change)
-{
-
+void chunk2(int16_t x, int16_t y, int16_t hit_castle_change) {
 	int16_t half = 0;
-	if (hit_castle_change != 0)
-	{
-
+	if (hit_castle_change != 0) {
 		half = hit_castle_change;
-
 	}
-
-
 
 	LCD_Draw_Vertical_Line(x + hit_castle_change, y - half, 5, LCD_COLOR_BLACK);
 	LCD_Draw_Vertical_Line(x + 5 + hit_castle_change, y - half, 5, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(x + hit_castle_change, y - half, 5, LCD_COLOR_BLACK);
 	LCD_Draw_Horizontal_Line(x + hit_castle_change, y + 5 - half, 5, LCD_COLOR_BLACK);
-
 }
 
-//void draw_chunks()
-//{
-//	int a[3] = {1, 5, 11};
-//
-//	for (int i = 0; i < 5; i ++)
-//	{
-//
-//		chunk1(a[i]);
-//		chunk2(-a[i]);
-//	}
-//
-//}
-void LCD_Draw_platform(uint16_t position)
-{
+// void draw_chunks()
+// {
+// 	int a[3] = {1, 5, 11};
+
+// 	for (int i = 0; i < 5; i ++)
+// 	{
+
+// 		chunk1(a[i]);
+// 		chunk2(-a[i]);
+// 	}
+
+// }
+void LCD_Draw_platform(uint16_t position) {
 	uint16_t color = LCD_COLOR_BLACK;
-	uint16_t len = 10;
-
-
+	uint16_t len   = 10;
 
 	uint16_t start = position - 25;
-	uint16_t end = position + 25;
+	uint16_t end   = position + 25;
 
-	for (uint16_t i = 0; i < len; i++) //Draw Vertical Lines
+	for (uint16_t i = 0; i < len; i++)	//Draw Vertical Lines
 	{
-		if (start >= 30)
-		{
+		if (start >= 30) {
 			LCD_Draw_Pixel(20 + i, start, color);
 		}
 
-		if (end <= 310)
-		{
-			LCD_Draw_Pixel(20 + i,end, color);
+		if (end <= 310) {
+			LCD_Draw_Pixel(20 + i, end, color);
 		}
-
 	}
 
-	len = 50; //Horizontal Lines
-	for (uint16_t i = 0; i < len; i++)
-	{
-		if ((start + i) <= 310 && (start >= 30))
-		{
+	len = 50;  //Horizontal Lines
+	for (uint16_t i = 0; i < len; i++) {
+		if ((start + i) <= 310 && (start >= 30)) {
 			LCD_Draw_Pixel(20, start + i, color);
 			LCD_Draw_Pixel(30, start + i, color);
 		}
-
 	}
 	//Rail GUN
 
-//	for (uint16_t i = position - 20; i < position; i ++) //draw rail gun
-//	{
-//		uint16_t x = -i + position + 30;
-//
-//		if (i >= 30 && i <= 310)
-//		{
-//			LCD_Draw_Pixel(x, i, color);
-//			LCD_Draw_Pixel(x + 1, i + 1, color);
-//			LCD_Draw_Pixel(x + 2, i + 2, color);
-//		}
-//
-//	}
+	//	for (uint16_t i = position - 20; i < position; i ++) //draw rail gun
+	//	{
+	//		uint16_t x = -i + position + 30;
+	//
+	//		if (i >= 30 && i <= 310)
+	//		{
+	//			LCD_Draw_Pixel(x, i, color);
+	//			LCD_Draw_Pixel(x + 1, i + 1, color);
+	//			LCD_Draw_Pixel(x + 2, i + 2, color);
+	//		}
+	//
+	//	}
 
-//	for (uint16_t i = position; i < position + 3; i ++)
-//	{
-//		uint16_t x = -i + position + 30;
-//		LCD_Draw_Pixel(x + 1, i + 1, color);
-//		LCD_Draw_Pixel(x + 2, i + 2, color);
-//	}
-
+	//	for (uint16_t i = position; i < position + 3; i ++)
+	//	{
+	//		uint16_t x = -i + position + 30;
+	//		LCD_Draw_Pixel(x + 1, i + 1, color);
+	//		LCD_Draw_Pixel(x + 2, i + 2, color);
+	//	}
 }
 
-void LCD_Error_Handler(void)
-{
-  for(;;); // Something went wrong
+void LCD_Error_Handler(void) {
+	for (;;)
+		;  // Something went wrong
 }
 
 // Demo using provided functions
-void QuickDemo(void)
-{
+void QuickDemo(void) {
 	uint16_t x;
 	uint16_t y;
 	// This for loop just illustrates how with using logic and for loops, you can create interesting things
 	// this may or not be useful ;)
-	for(y=0; y<LCD_PIXEL_HEIGHT; y++){
-		for(x=0; x < LCD_PIXEL_WIDTH; x++){
+	for (y = 0; y < LCD_PIXEL_HEIGHT; y++) {
+		for (x = 0; x < LCD_PIXEL_WIDTH; x++) {
 			if (x & 32)
-				frameBuffer[x*y] = LCD_COLOR_WHITE;
+				frameBuffer[x * y] = LCD_COLOR_WHITE;
 			else
-				frameBuffer[x*y] = LCD_COLOR_BLACK;
+				frameBuffer[x * y] = LCD_COLOR_BLACK;
 		}
 	}
 
@@ -613,193 +524,182 @@ void QuickDemo(void)
 	LCD_Clear(0, LCD_COLOR_RED);
 	osDelay(1500);
 	LCD_Clear(0, LCD_COLOR_WHITE);
-	LCD_Draw_Vertical_Line(10,10,250,LCD_COLOR_MAGENTA);
+	LCD_Draw_Vertical_Line(10, 10, 250, LCD_COLOR_MAGENTA);
 	osDelay(1500);
-	LCD_Draw_Vertical_Line(230,10,250,LCD_COLOR_MAGENTA);
+	LCD_Draw_Vertical_Line(230, 10, 250, LCD_COLOR_MAGENTA);
 	osDelay(1500);
 
-	LCD_Draw_Circle_Fill(125,150,20,LCD_COLOR_BLACK);
+	LCD_Draw_Circle_Fill(125, 150, 20, LCD_COLOR_BLACK);
 	osDelay(2000);
 
-	LCD_Clear(0,LCD_COLOR_BLUE);
+	LCD_Clear(0, LCD_COLOR_BLUE);
 	LCD_SetTextColor(LCD_COLOR_BLACK);
 	LCD_SetFont(&Font16x24);
 
-
 	//Display Text option 1: display all characters individually
-//	LCD_DisplayChar(100,140,'H');
-//	LCD_DisplayChar(115,140,'e');
-//	LCD_DisplayChar(125,140,'l');
-//	LCD_DisplayChar(130,140,'l');
-//	LCD_DisplayChar(140,140,'o');
-//
-//	LCD_DisplayChar(100,160,'W');
-//	LCD_DisplayChar(115,160,'o');
-//	LCD_DisplayChar(125,160,'r');
-//	LCD_DisplayChar(130,160,'l');
-//	LCD_DisplayChar(140,160,'d');
+	//	LCD_DisplayChar(100,140,'H');
+	//	LCD_DisplayChar(115,140,'e');
+	//	LCD_DisplayChar(125,140,'l');
+	//	LCD_DisplayChar(130,140,'l');
+	//	LCD_DisplayChar(140,140,'o');
+	//
+	//	LCD_DisplayChar(100,160,'W');
+	//	LCD_DisplayChar(115,160,'o');
+	//	LCD_DisplayChar(125,160,'r');
+	//	LCD_DisplayChar(130,160,'l');
+	//	LCD_DisplayChar(140,160,'d');
 
 	//Display Text option 2: display as strings (spacing can be weird)
-	LCD_DisplayString(70,140,"Hello");
-	LCD_DisplayString(70,160,"World");
-	LCD_DisplayString(70,180,"Number:");
-	runs+=1;
+	LCD_DisplayString(70, 140, "Hello");
+	LCD_DisplayString(70, 160, "World");
+	LCD_DisplayString(70, 180, "Number:");
+	runs += 1;
 	//send number to display
-	LCD_DisplayNumber(170,180,runs);
-
-
+	LCD_DisplayNumber(170, 180, runs);
 }
 
 /*        APPLICATION SPECIFIC FUNCTION DEFINITIONS - PUT YOUR NEWLY CREATED FUNCTIONS HERE       */
 
-
-
 /* Lower Level Functions for LTCD. 	MOTIFY ONLY WITH EXTREME CAUTION!!  */
 static uint8_t Is_LCD_IO_Initialized = 0;
-
-
-
 
 /**
   * @brief  Power on the LCD.
   * @param  None
   * @retval None
   */
-void ili9341_Init(void)
-{
-  /* Initialize ILI9341 low level bus layer ----------------------------------*/
-  LCD_IO_Init();
+void ili9341_Init(void) {
+	/* Initialize ILI9341 low level bus layer ----------------------------------*/
+	LCD_IO_Init();
 
-  /* Configure LCD */
-  ili9341_Write_Reg(0xCA);
-  ili9341_Send_Data(0xC3);				//param 1
-  ili9341_Send_Data(0x08);				//param 2
-  ili9341_Send_Data(0x50);				//param 3
-  ili9341_Write_Reg(LCD_POWERB); //CF
-  ili9341_Send_Data(0x00);				//param 1
-  ili9341_Send_Data(0xC1);				//param 2
-  ili9341_Send_Data(0x30);				//param 3
-  ili9341_Write_Reg(LCD_POWER_SEQ); //ED
-  ili9341_Send_Data(0x64);
-  ili9341_Send_Data(0x03);
-  ili9341_Send_Data(0x12);
-  ili9341_Send_Data(0x81);
-  ili9341_Write_Reg(LCD_DTCA);
-  ili9341_Send_Data(0x85);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x78);
-  ili9341_Write_Reg(LCD_POWERA);
-  ili9341_Send_Data(0x39);
-  ili9341_Send_Data(0x2C);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x34);
-  ili9341_Send_Data(0x02);
-  ili9341_Write_Reg(LCD_PRC);
-  ili9341_Send_Data(0x20);
-  ili9341_Write_Reg(LCD_DTCB);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x00);
-  ili9341_Write_Reg(LCD_FRMCTR1);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x1B);
-  ili9341_Write_Reg(LCD_DFC);
-  ili9341_Send_Data(0x0A);
-  ili9341_Send_Data(0xA2);
-  ili9341_Write_Reg(LCD_POWER1);
-  ili9341_Send_Data(0x10);
-  ili9341_Write_Reg(LCD_POWER2);
-  ili9341_Send_Data(0x10);
-  ili9341_Write_Reg(LCD_VCOM1);
-  ili9341_Send_Data(0x45);
-  ili9341_Send_Data(0x15);
-  ili9341_Write_Reg(LCD_VCOM2);
-  ili9341_Send_Data(0x90);
-  ili9341_Write_Reg(LCD_MAC);
-  ili9341_Send_Data(0xC8);
-  ili9341_Write_Reg(LCD_3GAMMA_EN);
-  ili9341_Send_Data(0x00);
-  ili9341_Write_Reg(LCD_RGB_INTERFACE);
-  ili9341_Send_Data(0xC2);
-  ili9341_Write_Reg(LCD_DFC);
-  ili9341_Send_Data(0x0A);
-  ili9341_Send_Data(0xA7);
-  ili9341_Send_Data(0x27);
-  ili9341_Send_Data(0x04);
+	/* Configure LCD */
+	ili9341_Write_Reg(0xCA);
+	ili9341_Send_Data(0xC3);		   //param 1
+	ili9341_Send_Data(0x08);		   //param 2
+	ili9341_Send_Data(0x50);		   //param 3
+	ili9341_Write_Reg(LCD_POWERB);	   //CF
+	ili9341_Send_Data(0x00);		   //param 1
+	ili9341_Send_Data(0xC1);		   //param 2
+	ili9341_Send_Data(0x30);		   //param 3
+	ili9341_Write_Reg(LCD_POWER_SEQ);  //ED
+	ili9341_Send_Data(0x64);
+	ili9341_Send_Data(0x03);
+	ili9341_Send_Data(0x12);
+	ili9341_Send_Data(0x81);
+	ili9341_Write_Reg(LCD_DTCA);
+	ili9341_Send_Data(0x85);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x78);
+	ili9341_Write_Reg(LCD_POWERA);
+	ili9341_Send_Data(0x39);
+	ili9341_Send_Data(0x2C);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x34);
+	ili9341_Send_Data(0x02);
+	ili9341_Write_Reg(LCD_PRC);
+	ili9341_Send_Data(0x20);
+	ili9341_Write_Reg(LCD_DTCB);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x00);
+	ili9341_Write_Reg(LCD_FRMCTR1);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x1B);
+	ili9341_Write_Reg(LCD_DFC);
+	ili9341_Send_Data(0x0A);
+	ili9341_Send_Data(0xA2);
+	ili9341_Write_Reg(LCD_POWER1);
+	ili9341_Send_Data(0x10);
+	ili9341_Write_Reg(LCD_POWER2);
+	ili9341_Send_Data(0x10);
+	ili9341_Write_Reg(LCD_VCOM1);
+	ili9341_Send_Data(0x45);
+	ili9341_Send_Data(0x15);
+	ili9341_Write_Reg(LCD_VCOM2);
+	ili9341_Send_Data(0x90);
+	ili9341_Write_Reg(LCD_MAC);
+	ili9341_Send_Data(0xC8);
+	ili9341_Write_Reg(LCD_3GAMMA_EN);
+	ili9341_Send_Data(0x00);
+	ili9341_Write_Reg(LCD_RGB_INTERFACE);
+	ili9341_Send_Data(0xC2);
+	ili9341_Write_Reg(LCD_DFC);
+	ili9341_Send_Data(0x0A);
+	ili9341_Send_Data(0xA7);
+	ili9341_Send_Data(0x27);
+	ili9341_Send_Data(0x04);
 
-  /* Colomn address set */
-  ili9341_Write_Reg(LCD_COLUMN_ADDR);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0xEF);
+	/* Colomn address set */
+	ili9341_Write_Reg(LCD_COLUMN_ADDR);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0xEF);
 
-  /* Page address set */
-  ili9341_Write_Reg(LCD_PAGE_ADDR);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x01);
-  ili9341_Send_Data(0x3F);
-  ili9341_Write_Reg(LCD_INTERFACE);
-  ili9341_Send_Data(0x01);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x06);
+	/* Page address set */
+	ili9341_Write_Reg(LCD_PAGE_ADDR);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x01);
+	ili9341_Send_Data(0x3F);
+	ili9341_Write_Reg(LCD_INTERFACE);
+	ili9341_Send_Data(0x01);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x06);
 
-  ili9341_Write_Reg(LCD_GRAM);
-  LCD_Delay(200);
+	ili9341_Write_Reg(LCD_GRAM);
+	LCD_Delay(200);
 
-  ili9341_Write_Reg(LCD_GAMMA);
-  ili9341_Send_Data(0x01);
+	ili9341_Write_Reg(LCD_GAMMA);
+	ili9341_Send_Data(0x01);
 
-  ili9341_Write_Reg(LCD_PGAMMA);
-  ili9341_Send_Data(0x0F);
-  ili9341_Send_Data(0x29);
-  ili9341_Send_Data(0x24);
-  ili9341_Send_Data(0x0C);
-  ili9341_Send_Data(0x0E);
-  ili9341_Send_Data(0x09);
-  ili9341_Send_Data(0x4E);
-  ili9341_Send_Data(0x78);
-  ili9341_Send_Data(0x3C);
-  ili9341_Send_Data(0x09);
-  ili9341_Send_Data(0x13);
-  ili9341_Send_Data(0x05);
-  ili9341_Send_Data(0x17);
-  ili9341_Send_Data(0x11);
-  ili9341_Send_Data(0x00);
-  ili9341_Write_Reg(LCD_NGAMMA);
-  ili9341_Send_Data(0x00);
-  ili9341_Send_Data(0x16);
-  ili9341_Send_Data(0x1B);
-  ili9341_Send_Data(0x04);
-  ili9341_Send_Data(0x11);
-  ili9341_Send_Data(0x07);
-  ili9341_Send_Data(0x31);
-  ili9341_Send_Data(0x33);
-  ili9341_Send_Data(0x42);
-  ili9341_Send_Data(0x05);
-  ili9341_Send_Data(0x0C);
-  ili9341_Send_Data(0x0A);
-  ili9341_Send_Data(0x28);
-  ili9341_Send_Data(0x2F);
-  ili9341_Send_Data(0x0F);
+	ili9341_Write_Reg(LCD_PGAMMA);
+	ili9341_Send_Data(0x0F);
+	ili9341_Send_Data(0x29);
+	ili9341_Send_Data(0x24);
+	ili9341_Send_Data(0x0C);
+	ili9341_Send_Data(0x0E);
+	ili9341_Send_Data(0x09);
+	ili9341_Send_Data(0x4E);
+	ili9341_Send_Data(0x78);
+	ili9341_Send_Data(0x3C);
+	ili9341_Send_Data(0x09);
+	ili9341_Send_Data(0x13);
+	ili9341_Send_Data(0x05);
+	ili9341_Send_Data(0x17);
+	ili9341_Send_Data(0x11);
+	ili9341_Send_Data(0x00);
+	ili9341_Write_Reg(LCD_NGAMMA);
+	ili9341_Send_Data(0x00);
+	ili9341_Send_Data(0x16);
+	ili9341_Send_Data(0x1B);
+	ili9341_Send_Data(0x04);
+	ili9341_Send_Data(0x11);
+	ili9341_Send_Data(0x07);
+	ili9341_Send_Data(0x31);
+	ili9341_Send_Data(0x33);
+	ili9341_Send_Data(0x42);
+	ili9341_Send_Data(0x05);
+	ili9341_Send_Data(0x0C);
+	ili9341_Send_Data(0x0A);
+	ili9341_Send_Data(0x28);
+	ili9341_Send_Data(0x2F);
+	ili9341_Send_Data(0x0F);
 
-  ili9341_Write_Reg(LCD_SLEEP_OUT);
-  LCD_Delay(200);
-  ili9341_Write_Reg(LCD_DISPLAY_ON);
-  /* GRAM start writing */
-  ili9341_Write_Reg(LCD_GRAM);
+	ili9341_Write_Reg(LCD_SLEEP_OUT);
+	LCD_Delay(200);
+	ili9341_Write_Reg(LCD_DISPLAY_ON);
+	/* GRAM start writing */
+	ili9341_Write_Reg(LCD_GRAM);
 }
-
 
 /**
   * @brief  Enables the Display.
   * @param  None
   * @retval None
   */
-void ili9341_DisplayOn(void)
-{
-  /* Display On */
-  ili9341_Write_Reg(LCD_DISPLAY_ON);
+void ili9341_DisplayOn(void) {
+	/* Display On */
+	ili9341_Write_Reg(LCD_DISPLAY_ON);
 }
 
 /**
@@ -807,10 +707,9 @@ void ili9341_DisplayOn(void)
   * @param  None
   * @retval None
   */
-void ili9341_DisplayOff(void)
-{
-  /* Display Off */
-  ili9341_Write_Reg(LCD_DISPLAY_OFF);
+void ili9341_DisplayOff(void) {
+	/* Display Off */
+	ili9341_Write_Reg(LCD_DISPLAY_OFF);
 }
 
 /**
@@ -818,9 +717,8 @@ void ili9341_DisplayOff(void)
   * @param  LCD_Reg: address of the selected register.
   * @retval None
   */
-void ili9341_Write_Reg(uint8_t LCD_Reg)
-{
-  LCD_IO_WriteReg(LCD_Reg);
+void ili9341_Write_Reg(uint8_t LCD_Reg) {
+	LCD_IO_WriteReg(LCD_Reg);
 }
 
 /**
@@ -828,9 +726,8 @@ void ili9341_Write_Reg(uint8_t LCD_Reg)
   * @param  LCD_Reg: address of the selected register.
   * @retval None
   */
-void ili9341_Send_Data(uint16_t RegValue)
-{
-  LCD_IO_WriteData(RegValue);
+void ili9341_Send_Data(uint16_t RegValue) {
+	LCD_IO_WriteData(RegValue);
 }
 
 /**
@@ -839,49 +736,45 @@ void ili9341_Send_Data(uint16_t RegValue)
   * @param  ReadSize: Number of bytes to read
   * @retval LCD Register Value.
   */
-uint32_t ili9341_ReadData(uint16_t RegValue, uint8_t ReadSize)
-{
-  /* Read a max of 4 bytes */
-  return (LCD_IO_ReadData(RegValue, ReadSize));
+uint32_t ili9341_ReadData(uint16_t RegValue, uint8_t ReadSize) {
+	/* Read a max of 4 bytes */
+	return (LCD_IO_ReadData(RegValue, ReadSize));
 }
-
 
 /******************************* SPI Routines *********************************/
 
 /**
   * @brief  SPI Bus initialization
   */
-static void SPI_Init(void)
-{
-  if(HAL_SPI_GetState(&SpiHandle) == HAL_SPI_STATE_RESET)
-  {
-    /* SPI configuration -----------------------------------------------------*/
-    SpiHandle.Instance = DISCOVERY_SPI;
-    /* SPI baudrate is set to 5.6 MHz (PCLK2/SPI_BaudRatePrescaler = 90/16 = 5.625 MHz)
+static void SPI_Init(void) {
+	if (HAL_SPI_GetState(&SpiHandle) == HAL_SPI_STATE_RESET) {
+		/* SPI configuration -----------------------------------------------------*/
+		SpiHandle.Instance = DISCOVERY_SPI;
+		/* SPI baudrate is set to 5.6 MHz (PCLK2/SPI_BaudRatePrescaler = 90/16 = 5.625 MHz)
        to verify these constraints:
        - ILI9341 LCD SPI interface max baudrate is 10MHz for write and 6.66MHz for read
        - l3gd20 SPI interface max baudrate is 10MHz for write/read
        - PCLK2 frequency is set to 90 MHz
     */
-    SpiHandle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+		SpiHandle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
 
-    /* On STM32F429I-Discovery, LCD ID cannot be read then keep a common configuration */
-    /* for LCD and GYRO (SPI_DIRECTION_2LINES) */
-    /* Note: To read a register a LCD, SPI_DIRECTION_1LINE should be set */
-    SpiHandle.Init.Direction      = SPI_DIRECTION_2LINES;
-    SpiHandle.Init.CLKPhase       = SPI_PHASE_1EDGE;
-    SpiHandle.Init.CLKPolarity    = SPI_POLARITY_LOW;
-    SpiHandle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
-    SpiHandle.Init.CRCPolynomial  = 7;
-    SpiHandle.Init.DataSize       = SPI_DATASIZE_8BIT;
-    SpiHandle.Init.FirstBit       = SPI_FIRSTBIT_MSB;
-    SpiHandle.Init.NSS            = SPI_NSS_SOFT;
-    SpiHandle.Init.TIMode         = SPI_TIMODE_DISABLED;
-    SpiHandle.Init.Mode           = SPI_MODE_MASTER;
+		/* On STM32F429I-Discovery, LCD ID cannot be read then keep a common configuration */
+		/* for LCD and GYRO (SPI_DIRECTION_2LINES) */
+		/* Note: To read a register a LCD, SPI_DIRECTION_1LINE should be set */
+		SpiHandle.Init.Direction	  = SPI_DIRECTION_2LINES;
+		SpiHandle.Init.CLKPhase		  = SPI_PHASE_1EDGE;
+		SpiHandle.Init.CLKPolarity	  = SPI_POLARITY_LOW;
+		SpiHandle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
+		SpiHandle.Init.CRCPolynomial  = 7;
+		SpiHandle.Init.DataSize		  = SPI_DATASIZE_8BIT;
+		SpiHandle.Init.FirstBit		  = SPI_FIRSTBIT_MSB;
+		SpiHandle.Init.NSS			  = SPI_NSS_SOFT;
+		SpiHandle.Init.TIMode		  = SPI_TIMODE_DISABLED;
+		SpiHandle.Init.Mode			  = SPI_MODE_MASTER;
 
-    SPI_MspInit(&SpiHandle);
-    HAL_SPI_Init(&SpiHandle);
-  }
+		SPI_MspInit(&SpiHandle);
+		HAL_SPI_Init(&SpiHandle);
+	}
 }
 
 /**
@@ -889,75 +782,68 @@ static void SPI_Init(void)
   * @param  ReadSize: Number of bytes to read (max 4 bytes)
   * @retval Value read on the SPI
   */
-static uint32_t SPI_Read(uint8_t ReadSize)
-{
-  HAL_StatusTypeDef status = HAL_OK;
-  uint32_t readvalue;
+static uint32_t SPI_Read(uint8_t ReadSize) {
+	HAL_StatusTypeDef status = HAL_OK;
+	uint32_t		  readvalue;
 
-  status = HAL_SPI_Receive(&SpiHandle, (uint8_t*) &readvalue, ReadSize, SpiTimeout);
+	status = HAL_SPI_Receive(&SpiHandle, (uint8_t *)&readvalue, ReadSize, SpiTimeout);
 
-  /* Check the communication status */
-  if(status != HAL_OK)
-  {
-    /* Re-Initialize the BUS */
-    SPI_Error();
-  }
+	/* Check the communication status */
+	if (status != HAL_OK) {
+		/* Re-Initialize the BUS */
+		SPI_Error();
+	}
 
-  return readvalue;
+	return readvalue;
 }
 
 /**
   * @brief  Writes a byte to device.
   * @param  Value: value to be written
   */
-static void SPI_Write(uint16_t Value)
-{
-  HAL_StatusTypeDef status = HAL_OK;
+static void SPI_Write(uint16_t Value) {
+	HAL_StatusTypeDef status = HAL_OK;
 
-  status = HAL_SPI_Transmit(&SpiHandle, (uint8_t*) &Value, 1, SpiTimeout);
+	status = HAL_SPI_Transmit(&SpiHandle, (uint8_t *)&Value, 1, SpiTimeout);
 
-  /* Check the communication status */
-  if(status != HAL_OK)
-  {
-    /* Re-Initialize the BUS */
-    SPI_Error();
-  }
+	/* Check the communication status */
+	if (status != HAL_OK) {
+		/* Re-Initialize the BUS */
+		SPI_Error();
+	}
 }
-
 
 /**
   * @brief  SPI error treatment function.
   */
-static void SPI_Error(void)
-{
-  /* De-initialize the SPI communication BUS */
-  HAL_SPI_DeInit(&SpiHandle);
+static void SPI_Error(void) {
+	/* De-initialize the SPI communication BUS */
+	HAL_SPI_DeInit(&SpiHandle);
 
-  /* Re- Initialize the SPI communication BUS */
-  SPI_Init();
+	/* Re- Initialize the SPI communication BUS */
+	SPI_Init();
 }
 
 /**
   * @brief  SPI MSP Init.
   * @param  hspi: SPI handle
   */
-static void SPI_MspInit(SPI_HandleTypeDef *hspi)
-{
-  GPIO_InitTypeDef   GPIO_InitStructure;
+static void SPI_MspInit(SPI_HandleTypeDef *hspi) {
+	GPIO_InitTypeDef GPIO_InitStructure;
 
-  /* Enable SPI clock */
-  DISCOVERY_SPI_CLK_ENABLE();
+	/* Enable SPI clock */
+	DISCOVERY_SPI_CLK_ENABLE();
 
-  /* Enable DISCOVERY_SPI GPIO clock */
-  DISCOVERY_SPI_GPIO_CLK_ENABLE();
+	/* Enable DISCOVERY_SPI GPIO clock */
+	DISCOVERY_SPI_GPIO_CLK_ENABLE();
 
-  /* configure SPI SCK, MOSI and MISO */
-  GPIO_InitStructure.Pin    = (DISCOVERY_SPI_SCK_PIN | DISCOVERY_SPI_MOSI_PIN | DISCOVERY_SPI_MISO_PIN);
-  GPIO_InitStructure.Mode   = GPIO_MODE_AF_PP;
-  GPIO_InitStructure.Pull   = GPIO_PULLDOWN;
-  GPIO_InitStructure.Speed  = GPIO_SPEED_MEDIUM;
-  GPIO_InitStructure.Alternate = DISCOVERY_SPI_AF;
-  HAL_GPIO_Init(DISCOVERY_SPI_GPIO_PORT, &GPIO_InitStructure);
+	/* configure SPI SCK, MOSI and MISO */
+	GPIO_InitStructure.Pin		 = (DISCOVERY_SPI_SCK_PIN | DISCOVERY_SPI_MOSI_PIN | DISCOVERY_SPI_MISO_PIN);
+	GPIO_InitStructure.Mode		 = GPIO_MODE_AF_PP;
+	GPIO_InitStructure.Pull		 = GPIO_PULLDOWN;
+	GPIO_InitStructure.Speed	 = GPIO_SPEED_MEDIUM;
+	GPIO_InitStructure.Alternate = DISCOVERY_SPI_AF;
+	HAL_GPIO_Init(DISCOVERY_SPI_GPIO_PORT, &GPIO_InitStructure);
 }
 
 /********************************* LINK LCD ***********************************/
@@ -965,77 +851,73 @@ static void SPI_MspInit(SPI_HandleTypeDef *hspi)
 /**
   * @brief  Configures the LCD_SPI interface.
   */
-void LCD_IO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStructure;
+void LCD_IO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStructure;
 
-  if(Is_LCD_IO_Initialized == 0)
-  {
-    Is_LCD_IO_Initialized = 1;
+	if (Is_LCD_IO_Initialized == 0) {
+		Is_LCD_IO_Initialized = 1;
 
-    /* Configure in Output Push-Pull mode */
-    LCD_WRX_GPIO_CLK_ENABLE();
-    GPIO_InitStructure.Pin     = LCD_WRX_PIN;
-    GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStructure.Pull    = GPIO_NOPULL;
-    GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
-    HAL_GPIO_Init(LCD_WRX_GPIO_PORT, &GPIO_InitStructure);
+		/* Configure in Output Push-Pull mode */
+		LCD_WRX_GPIO_CLK_ENABLE();
+		GPIO_InitStructure.Pin	 = LCD_WRX_PIN;
+		GPIO_InitStructure.Mode	 = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStructure.Pull	 = GPIO_NOPULL;
+		GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+		HAL_GPIO_Init(LCD_WRX_GPIO_PORT, &GPIO_InitStructure);
 
-    LCD_RDX_GPIO_CLK_ENABLE();
-    GPIO_InitStructure.Pin     = LCD_RDX_PIN;
-    GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStructure.Pull    = GPIO_NOPULL;
-    GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
-    HAL_GPIO_Init(LCD_RDX_GPIO_PORT, &GPIO_InitStructure);
+		LCD_RDX_GPIO_CLK_ENABLE();
+		GPIO_InitStructure.Pin	 = LCD_RDX_PIN;
+		GPIO_InitStructure.Mode	 = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStructure.Pull	 = GPIO_NOPULL;
+		GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+		HAL_GPIO_Init(LCD_RDX_GPIO_PORT, &GPIO_InitStructure);
 
-    /* Configure the LCD Control pins ----------------------------------------*/
-    LCD_NCS_GPIO_CLK_ENABLE();
+		/* Configure the LCD Control pins ----------------------------------------*/
+		LCD_NCS_GPIO_CLK_ENABLE();
 
-    /* Configure NCS in Output Push-Pull mode */
-    GPIO_InitStructure.Pin     = LCD_NCS_PIN;
-    GPIO_InitStructure.Mode    = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStructure.Pull    = GPIO_NOPULL;
-    GPIO_InitStructure.Speed   = GPIO_SPEED_FAST;
-    HAL_GPIO_Init(LCD_NCS_GPIO_PORT, &GPIO_InitStructure);
+		/* Configure NCS in Output Push-Pull mode */
+		GPIO_InitStructure.Pin	 = LCD_NCS_PIN;
+		GPIO_InitStructure.Mode	 = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStructure.Pull	 = GPIO_NOPULL;
+		GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
+		HAL_GPIO_Init(LCD_NCS_GPIO_PORT, &GPIO_InitStructure);
 
-    /* Set or Reset the control line */
-    LCD_CS_LOW();
-    LCD_CS_HIGH();
+		/* Set or Reset the control line */
+		LCD_CS_LOW();
+		LCD_CS_HIGH();
 
-    SPI_Init();
-  }
+		SPI_Init();
+	}
 }
 
 /**
   * @brief  Writes register value.
   */
-void LCD_IO_WriteData(uint16_t RegValue)
-{
-  /* Set WRX to send data */
-  LCD_WRX_HIGH();
+void LCD_IO_WriteData(uint16_t RegValue) {
+	/* Set WRX to send data */
+	LCD_WRX_HIGH();
 
-  /* Reset LCD control line(/CS) and Send data */
-  LCD_CS_LOW();
-  SPI_Write(RegValue);
+	/* Reset LCD control line(/CS) and Send data */
+	LCD_CS_LOW();
+	SPI_Write(RegValue);
 
-  /* Deselect: Chip Select high */
-  LCD_CS_HIGH();
+	/* Deselect: Chip Select high */
+	LCD_CS_HIGH();
 }
 
 /**
   * @brief  Writes register address.
   */
-void LCD_IO_WriteReg(uint8_t Reg)
-{
-  /* Reset WRX to send command */
-  LCD_WRX_LOW();
+void LCD_IO_WriteReg(uint8_t Reg) {
+	/* Reset WRX to send command */
+	LCD_WRX_LOW();
 
-  /* Reset LCD control line(/CS) and Send command */
-  LCD_CS_LOW();
-  SPI_Write(Reg);
+	/* Reset LCD control line(/CS) and Send command */
+	LCD_CS_LOW();
+	SPI_Write(Reg);
 
-  /* Deselect: Chip Select high */
-  LCD_CS_HIGH();
+	/* Deselect: Chip Select high */
+	LCD_CS_HIGH();
 }
 
 /**
@@ -1044,40 +926,35 @@ void LCD_IO_WriteReg(uint8_t Reg)
   * @param  ReadSize Number of bytes to read
   * @retval Content of the register value
   */
-uint32_t LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize)
-{
-  uint32_t readvalue = 0;
+uint32_t LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize) {
+	uint32_t readvalue = 0;
 
-  /* Select: Chip Select low */
-  LCD_CS_LOW();
+	/* Select: Chip Select low */
+	LCD_CS_LOW();
 
-  /* Reset WRX to send command */
-  LCD_WRX_LOW();
+	/* Reset WRX to send command */
+	LCD_WRX_LOW();
 
-  SPI_Write(RegValue);
+	SPI_Write(RegValue);
 
-  readvalue = SPI_Read(ReadSize);
+	readvalue = SPI_Read(ReadSize);
 
-  /* Set WRX to send data */
-  LCD_WRX_HIGH();
+	/* Set WRX to send data */
+	LCD_WRX_HIGH();
 
-  /* Deselect: Chip Select high */
-  LCD_CS_HIGH();
+	/* Deselect: Chip Select high */
+	LCD_CS_HIGH();
 
-  return readvalue;
+	return readvalue;
 }
 
 /**
   * @brief  Wait for loop in ms.
   * @param  Delay in ms.
   */
-void LCD_Delay(uint32_t Delay)
-{
-  osDelay(Delay);
+void LCD_Delay(uint32_t Delay) {
+	osDelay(Delay);
 }
-
-
-
 
 /*       Generated HAL Stuff      */
 

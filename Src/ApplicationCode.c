@@ -5,21 +5,22 @@
  *      Author: Ayla Tabi
  */
 #include "ApplicationCode.h"
+
 #include <math.h>
 
 uint16_t total_charge = 50;
 
 osMutexId_t time_stamp_mutex_id;
-const osMutexAttr_t time_stamp_Mutex_attr = { "Time_Stamp_Mutex", 0,
-NULL, 0U };
+const osMutexAttr_t time_stamp_Mutex_attr = {"Time_Stamp_Mutex", 0,
+											 NULL, 0U};
 
 osMutexId_t bttn_time_stamp_mutex_id;
-const osMutexAttr_t bttn_time_stamp_Mutex_attr = { "Button_Time_Stamp_Mutex", 0,
-NULL, 0U };
+const osMutexAttr_t bttn_time_stamp_Mutex_attr = {"Button_Time_Stamp_Mutex", 0,
+												  NULL, 0U};
 
 osMutexId_t rg_mutex_id;
-const osMutexAttr_t rg_Mutex_attr = { "rg_Mutex", 0,
-NULL, 0U };
+const osMutexAttr_t rg_Mutex_attr = {"rg_Mutex", 0,
+									 NULL, 0U};
 
 volatile uint64_t time_stamp = 0;
 volatile uint64_t bttn_current_time_stamp = 0;
@@ -46,85 +47,80 @@ float delta = 0;
 osTimerId_t timer_id;
 StaticTimer_t static_timer;
 const osTimerAttr_t timer_attr =
-	{ .name = "my_timer",
-	.cb_mem = &static_timer,
-	.cb_size = sizeof(static_timer) };
+	{.name = "my_timer",
+	 .cb_mem = &static_timer,
+	 .cb_size = sizeof(static_timer)};
 
 osThreadId_t satchel_thread_id;
 StaticTask_t satchel_thread_t;
 uint32_t satchel_stack[512];
-const osThreadAttr_t satchel_thread_attr = { .name = "satchel_thread",
-		.stack_mem = &satchel_stack[0], .stack_size = sizeof(satchel_stack),
-		.cb_mem = &satchel_thread_t, .cb_size = sizeof(satchel_thread_t),
-		.priority = osPriorityNormal };
-
+const osThreadAttr_t satchel_thread_attr = {.name = "satchel_thread",
+											.stack_mem = &satchel_stack[0],
+											.stack_size = sizeof(satchel_stack),
+											.cb_mem = &satchel_thread_t,
+											.cb_size = sizeof(satchel_thread_t),
+											.priority = osPriorityNormal};
 
 osThreadId_t button_thread_id;
 StaticTask_t button_thread_t;
 uint32_t button_stack[512];
 const osThreadAttr_t button_thread_attr =
-	{ .name = "button_thread",
-	.stack_mem = &button_stack[0],
-	.stack_size = sizeof(button_stack),
-	.cb_mem = &button_thread_t,
-	.cb_size = sizeof(button_thread_t),
-	.priority = osPriorityNormal };
+	{.name = "button_thread",
+	 .stack_mem = &button_stack[0],
+	 .stack_size = sizeof(button_stack),
+	 .cb_mem = &button_thread_t,
+	 .cb_size = sizeof(button_thread_t),
+	 .priority = osPriorityNormal};
 
 osThreadId_t physics_thread_id;
 StaticTask_t physics_thread_t;
 uint32_t physics_stack[512];
 const osThreadAttr_t physics_thread_attr =
-	{ .name = "physics_thread",
-	.stack_mem = &physics_stack[0],
-	.stack_size = sizeof(physics_stack),
-	.cb_mem = &physics_thread_t,
-	.cb_size = sizeof(physics_thread_t),
-	.priority = osPriorityNormal};
+	{.name = "physics_thread",
+	 .stack_mem = &physics_stack[0],
+	 .stack_size = sizeof(physics_stack),
+	 .cb_mem = &physics_thread_t,
+	 .cb_size = sizeof(physics_thread_t),
+	 .priority = osPriorityNormal};
 
 osThreadId_t rail_gun_thread_id;
 StaticTask_t rail_gun_thread_t;
 uint32_t rail_gun_stack[512];
 const osThreadAttr_t rail_gun_thread_attr =
-	{ .name = "rail_gun_thread",
-	.stack_mem = &rail_gun_stack[0],
-	.stack_size = sizeof(rail_gun_stack),
-	.cb_mem = &rail_gun_thread_t,
-	.cb_size = sizeof(rail_gun_thread_t),
-	.priority = osPriorityNormal };
+	{.name = "rail_gun_thread",
+	 .stack_mem = &rail_gun_stack[0],
+	 .stack_size = sizeof(rail_gun_stack),
+	 .cb_mem = &rail_gun_thread_t,
+	 .cb_size = sizeof(rail_gun_thread_t),
+	 .priority = osPriorityNormal};
 
 osThreadId_t lcd_display_thread_id;
 StaticTask_t lcd_display_thread_t;
 uint32_t lcd_display_stack[512];
 const osThreadAttr_t lcd_display_thread_attr =
-{ .name = "lcd_display_thread",
-		.stack_mem = &lcd_display_stack[0],
-		.stack_size = sizeof(lcd_display_stack),
-		.cb_mem = &lcd_display_thread_t,
-		.cb_size = sizeof(lcd_display_thread_t),
-		.priority = osPriorityNormal1 };
+	{.name = "lcd_display_thread",
+	 .stack_mem = &lcd_display_stack[0],
+	 .stack_size = sizeof(lcd_display_stack),
+	 .cb_mem = &lcd_display_thread_t,
+	 .cb_size = sizeof(lcd_display_thread_t),
+	 .priority = osPriorityNormal1};
 
 osThreadId_t gyro_thread_id;
 StaticTask_t gyro_thread_t;
 uint32_t gyro_stack[512];
-const osThreadAttr_t gyro_thread_attr = { .name = "gyro_thread", .stack_mem =
-		&gyro_stack[0], .stack_size = sizeof(gyro_stack), .cb_mem =
-		&gyro_thread_t, .cb_size = sizeof(gyro_thread_t), .priority =
-		osPriorityBelowNormal };
-
+const osThreadAttr_t gyro_thread_attr = {.name = "gyro_thread", .stack_mem = &gyro_stack[0], .stack_size = sizeof(gyro_stack), .cb_mem = &gyro_thread_t, .cb_size = sizeof(gyro_thread_t), .priority = osPriorityBelowNormal};
 
 /***********************************************
  *  Releases the semaphore every 100 ms	to the gyro thread
  ***********************************************/
 void Timer_Callback(void *arg) {
-	int32_t argument = (int32_t) arg;
+	int32_t argument = (int32_t)arg;
 	UNUSED(argument);
 
 	if (osSemaphoreGetCount(gyro_semaphore_id) == 0) {
-	    osSemaphoreRelease(gyro_semaphore_id);
+		osSemaphoreRelease(gyro_semaphore_id);
 	}
-
 }
-
 
 /***********************************************
  *  This thread is woken up from the IRQ Handler via a event
@@ -144,55 +140,38 @@ __NO_RETURN void button_thread(void *argument) {
 	uint32_t button_on_time_stamp = 0;
 	const uint32_t minimum_rg_time = 400;
 
-
 	for (;;) {
-
 		osEventFlagsWait(gpio_evt_id, BUTTON_EVENT, osFlagsWaitAny, osWaitForever);
 		button_state_t button_state = user_button_state();
 
-
-		if (button_state == BUTTON_ON)
-		{
+		if (button_state == BUTTON_ON) {
 			on_on_time = HAL_GetTick() - button_on_time_stamp;
 			button_on_time_stamp = HAL_GetTick();
-
-
 		}
 
-		if (button_state == BUTTON_OFF)
-		{
+		if (button_state == BUTTON_OFF) {
 			on_off_time = HAL_GetTick() - button_on_time_stamp;
 
-			if (on_off_time > minimum_rg_time) //If single tap then charge rail gun
+			if (on_off_time > minimum_rg_time)	//If single tap then charge rail gun
 			{
 				delta = ((float)HAL_GetTick() - button_on_time_stamp) * 0.001f;
 				msg.msg_type = BUTTON;
 				msg.delta = delta;
 				osMessageQueuePut(physics_message_id, &msg, 0U, osWaitForever);
-			}
-			else //could be double tap
+			} else	//could be double tap
 			{
 				is_double_tap = 0;
-				if (on_on_time < double_tap_time)
-				{
+				if (on_on_time < double_tap_time) {
 					is_double_tap = 1;
 				}
 
-				if (is_double_tap)
-				{
-
-
-
+				if (is_double_tap) {
 					lcd_msg.msg_type = FORCE_SHEILD;
 					lcd_msg.force_shield = 1;
 					osMessageQueuePut(lcd_message_id, &lcd_msg, 0U, osWaitForever);
-
-
 				}
 			}
-
 		}
-
 	}
 }
 
@@ -209,62 +188,57 @@ __NO_RETURN void physics_thread(void *argument) {
 	osStatus_t ret;
 	float platform_position = 160;
 	for (;;) {
-
 		ret = osMessageQueueGet(physics_message_id, &phys_message_obj, NULL, osWaitForever);
-		if (ret != osOK)
-		{
-			for(;;);
+		if (ret != osOK) {
+			for (;;)
+				;
 		}
-		switch(phys_message_obj.msg_type)
-		{
+		switch (phys_message_obj.msg_type) {
 			case BUTTON:
 
 				rg_message_obj.position = platform_position;
 				rg_message_obj.delta = phys_message_obj.delta;
 				ret = osMessageQueuePut(rg_message_id, &rg_message_obj, 0U, osWaitForever);
-				if (ret != osOK)
-				{
-					for(;;);
+				if (ret != osOK) {
+					for (;;)
+						;
 				}
 				break;
 			case GYRO:
 				int16_t gyro_rotation = phys_message_obj.rotation;
 
-
-				angle += ((float)gyro_rotation /1000.0f); // * (M_PI / 180.0f) * 0.1; //mdps to s
-//				float acceleration = sinf(angle) * GRAVITY;
-//				velocity += (acceleration * 0.1f);
+				angle += ((float)gyro_rotation / 1000.0f);	// * (M_PI / 180.0f) * 0.1; //mdps to s
+															//				float acceleration = sinf(angle) * GRAVITY;
+															//				velocity += (acceleration * 0.1f);
 				position += angle * 0.1f;
 
-				if (position < 55){
+				if (position < 55) {
 					position = 55;
 					angle = -angle;
 				}
-				if (position > 285){
+				if (position > 285) {
 					position = 285;
 					angle = -angle;
 				}
 
-				if ((angle > 80 || angle < -80) && (position == 285 || position == 55))
-				{
+				if ((angle > 80 || angle < -80) && (position == 285 || position == 55)) {
 					lcd_message_obj.platform_damage = 1;
-				}
-				else
-				{
+				} else {
 					lcd_message_obj.platform_damage = 0;
 				}
 				platform_position = position;
 				lcd_message_obj.msg_type = GYRO;
 				lcd_message_obj.gyro_position = (uint16_t)position;
 				ret = osMessageQueuePut(lcd_message_id, &lcd_message_obj, 0U, osWaitForever);
-				if (ret != osOK)
-				{
-					for(;;);
+				if (ret != osOK) {
+					for (;;)
+						;
 				}
 				break;
 
 			default:
-				for(;;);
+				for (;;)
+					;
 				break;
 		}
 	}
@@ -288,33 +262,26 @@ __NO_RETURN void rail_gun_thread(void *argument) {
 	float charged_energy = 0;
 	uint16_t damage = 50;
 
-
 	osStatus_t ret;
 
 	for (;;) {
-
 		ret = osMessageQueueGet(rg_message_id, &message_obj, NULL, osWaitForever);
-		if (ret != osOK)
-		{
-			for(;;);
+		if (ret != osOK) {
+			for (;;)
+				;
 		}
-
 
 		delta_l = message_obj.delta;
 		curr_position = message_obj.position;
 
-
-
-
 		charged_energy = GENERATOR_POWER * delta_l;
 
-		float button_velocity = sqrt((2 * charged_energy)/ (50 * 1000)) * 2.0;
+		float button_velocity = sqrt((2 * charged_energy) / (50 * 1000)) * 2.0;
 
 		rg_velocity_x = -button_velocity * cosf(.8);
 		rg_velocity_y = button_velocity * sinf(.8);
 
 		curr_time_stamp = 0;
-
 
 		float converted_charged_energy = charged_energy * 0.000001f * 2.0f;
 		if (converted_charged_energy > 50) converted_charged_energy = 50;
@@ -323,14 +290,9 @@ __NO_RETURN void rail_gun_thread(void *argument) {
 		curr_total_charge = total_charge;
 		osMutexRelease(time_stamp_mutex_id);
 
-		if (curr_total_charge > 30 && converted_charged_energy < curr_total_charge)
-		{
-
-
-
-			while(1)
-			{
-				float time = (float)(curr_time_stamp) * 0.1f;
+		if (curr_total_charge > 30 && converted_charged_energy < curr_total_charge) {
+			while (1) {
+				float time = (float)(curr_time_stamp)*0.1f;
 				float rg_x_position = curr_position + rg_velocity_x * time;
 				float rg_y_position = 50.0f + rg_velocity_y * time - 0.5f * 9.8f * time * time;
 
@@ -341,44 +303,42 @@ __NO_RETURN void rail_gun_thread(void *argument) {
 				lcd_mssg.charged_energy = converted_charged_energy;
 				lcd_mssg.rail_gun_done = 0;
 				ret = osMessageQueuePut(lcd_message_id, &lcd_mssg, 0U, 0U);
-				if (ret != osOK)
-				{
-					for(;;);
+				if (ret != osOK) {
+					for (;;)
+						;
 				}
 
-				curr_time_stamp +=2;
+				curr_time_stamp += 2;
 
-				if ((rg_x_position < 30) || (rg_y_position < 30)) //Rail Gun Bullet hit bounds
+				if ((rg_x_position < 30) || (rg_y_position < 30))  //Rail Gun Bullet hit bounds
 				{
 					lcd_mssg.msg_type = RAIL_GUN;
 					lcd_mssg.x_position = 0;
 					lcd_mssg.y_position = 0;
 					lcd_mssg.rail_gun_done = 1;
-					if (rg_x_position < 30)
-					{
+					if (rg_x_position < 30) {
 						damage -= 25;
 					}
 					lcd_mssg.damage = damage;
 
 					ret = osMessageQueuePut(lcd_message_id, &lcd_mssg, 0U, 0U);
-					if (ret != osOK)
-					{
-						for(;;);
+					if (ret != osOK) {
+						for (;;)
+							;
 					}
 
-					if (rg_x_position < 30)
-					{
+					if (rg_x_position < 30) {
 						lcd_mssg.msg_type = HIT_CASTLE;
 						lcd_mssg.hit_castle_x_position = rg_x_position;
 						lcd_mssg.hit_castle_y_position = rg_y_position;
 						lcd_mssg.hit_castle_change = 0;
 						ret = osMessageQueuePut(lcd_message_id, &lcd_mssg, 0U, 0U);
-						if (ret != osOK)
-						{
-							for(;;);
+						if (ret != osOK) {
+							for (;;)
+								;
 						}
 
-						lcd_mssg.hit_castle_change = 8; //Hit castle animation
+						lcd_mssg.hit_castle_change = 8;	 //Hit castle animation
 						osMessageQueuePut(lcd_message_id, &lcd_mssg, 0U, 0U);
 
 						lcd_mssg.hit_castle_change = 10;
@@ -389,17 +349,14 @@ __NO_RETURN void rail_gun_thread(void *argument) {
 					break;
 				}
 
-
 				ret = osDelay(200);
-				if (ret != osOK)
-				{
-					for(;;);
+				if (ret != osOK) {
+					for (;;)
+						;
 				}
-
 			}
 		}
 	}
-
 }
 
 /***********************************************
@@ -411,23 +368,20 @@ __NO_RETURN void gyro_thread(void *argument) {
 	Gyro_Init();
 	PHYSICS_MSGQUEUE_OBJ_t msg;
 
-
 	osStatus_t ret;
 	for (;;) {
-
-	    int16_t rotation = Gyro_Get_Velocity();
-	    if (rotation > -500 && rotation < 500) rotation = 0; //deadzone mitigation
+		int16_t rotation = Gyro_Get_Velocity();
+		if (rotation > -500 && rotation < 500) rotation = 0;  //deadzone mitigation
 
 		msg.msg_type = GYRO;
 		msg.rotation = rotation;
 		ret = osMessageQueuePut(physics_message_id, &msg, 0U, 0U);
-		if (ret != osOK)
-		{
-			for(;;);
+		if (ret != osOK) {
+			for (;;)
+				;
 		}
 
-	    osDelay(100);
-
+		osDelay(100);
 	}
 }
 
@@ -453,7 +407,6 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 	float hit_castle_change = 0;
 	uint16_t damage = 50;
 
-
 	uint16_t charge = 50;
 
 	float satchel_x_position = 40;
@@ -472,20 +425,13 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 
 	int force_shield = 0;
 
-
-
 	for (;;) {
-
-
 		osMessageQueueGet(lcd_message_id, &lcd_message_obj, NULL, osWaitForever);
 
-
-		switch(lcd_message_obj.msg_type)
-		{
+		switch (lcd_message_obj.msg_type) {
 			case RAIL_GUN:
-				 //180 ,40
-				if (lcd_message_obj.x_position != rail_x || lcd_message_obj.y_position != rail_y)
-				{
+				//180 ,40
+				if (lcd_message_obj.x_position != rail_x || lcd_message_obj.y_position != rail_y) {
 					rail_x = lcd_message_obj.x_position;
 					rail_y = lcd_message_obj.y_position;
 					damage = lcd_message_obj.damage;
@@ -503,16 +449,13 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 				break;
 			case GYRO:
 
-				if (lcd_message_obj.gyro_position != last_g_position)
-				{
+				if (lcd_message_obj.gyro_position != last_g_position) {
 					g_position = lcd_message_obj.gyro_position;
 					last_g_position = g_position;
 
-					if (lcd_message_obj.platform_damage == 1)
-					{
+					if (lcd_message_obj.platform_damage == 1) {
 						platform_damage -= 10;
 					}
-
 				}
 
 				break;
@@ -526,38 +469,30 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 					osMutexAcquire(time_stamp_mutex_id, osWaitForever);
 					total_charge = total_charge - force_shield_activate;
 					osMutexRelease(time_stamp_mutex_id);
-				}
-				else if (force_shield == 1)
-				{
+				} else if (force_shield == 1) {
 					force_shield = 0;
 				}
 
 				break;
 			default:
-				for(;;);
+				for (;;)
+					;
 				break;
 		}
 
-		if (satchel_flag == 0)
-		{
+		if (satchel_flag == 0) {
 			end_position = 50.0f + ((float)rand_r(&seed) / (float)RAND_MAX) * 270.0f;
 			satchel_velocity = (end_position - starting_position) / total_time;
 			satchel_flag = 1;
 		}
 
+		satchel_y_position = 180.0f - 0.5f * 9.8f * ((float)time_stamp * 0.1f) * ((float)time_stamp * 0.1f);
+		satchel_x_position = satchel_velocity * ((float)time_stamp * 0.1f) + 40.0f;
 
-
-
-		satchel_y_position = 180.0f - 0.5f * 9.8f * ((float) time_stamp * 0.1f) * ((float) time_stamp * 0.1f);
-		satchel_x_position = satchel_velocity * ((float) time_stamp * 0.1f) + 40.0f;
-
-
-		if (force_shield == 0 &&(satchel_y_position < 30 && satchel_y_position > 20) && (satchel_x_position < (last_g_position + 25) && satchel_x_position > (last_g_position - 25)))
-		{
+		if (force_shield == 0 && (satchel_y_position < 30 && satchel_y_position > 20) && (satchel_x_position < (last_g_position + 25) && satchel_x_position > (last_g_position - 25))) {
 			platform_damage -= 10;
 		}
-		if ((rail_y < 30 && rail_y > 20) && (rail_x < (last_g_position + 25) && rail_x > (last_g_position - 25)))
-		{
+		if ((rail_y < 30 && rail_y > 20) && (rail_x < (last_g_position + 25) && rail_x > (last_g_position - 25))) {
 			platform_damage -= 10;
 		}
 		LCD_Clear(0, LCD_COLOR_WHITE);
@@ -565,84 +500,63 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 		LCD_SetFont(&Font16x24);
 		LCD_Draw_platform(last_g_position);
 
-
-
-		if ((rail_x != 0) && (rail_y != 0))
-		{
+		if ((rail_x != 0) && (rail_y != 0)) {
 			LCD_Draw_Circle_Fill(rail_y, rail_x, 5, LCD_COLOR_BLACK);
 		}
 
-		if (satchel_x_position < 300 && satchel_y_position > 30)
-		{
-			if (force_shield == 0)
-			{
+		if (satchel_x_position < 300 && satchel_y_position > 30) {
+			if (force_shield == 0) {
 				LCD_Draw_Circle_Fill(satchel_y_position, satchel_x_position, 5, 0xca60);
 			}
 			if (force_shield == 1 &&
-			    satchel_y_position <= 65 &&  // Satchel is within shield height
-			    satchel_x_position >= (last_g_position - 25) &&  // inside left side
-			    satchel_x_position <= (last_g_position + 25))
-			{
-//				LCD_Draw_Circle_Fill(satchel_y_position, satchel_x_position, 5, 0xca60);
+				satchel_y_position <= 65 &&						 // Satchel is within shield height
+				satchel_x_position >= (last_g_position - 25) &&	 // inside left side
+				satchel_x_position <= (last_g_position + 25)) {
+				//				LCD_Draw_Circle_Fill(satchel_y_position, satchel_x_position, 5, 0xca60);
 				satchel_flag = 0;
 				time_stamp = 0;
 			}
 		}
 
-		if (damage != 0)
-		{
-
+		if (damage != 0) {
 			LCD_Draw_Castle_Damage(damage);
-		}
-		else
-		{
-			for (int k = 0; k < 40; k+= 5)
-			{
+		} else {
+			for (int k = 0; k < 40; k += 5) {
 				LCD_Clear(0, LCD_COLOR_WHITE);
 				LCD_SetTextColor(LCD_COLOR_BLACK);
 				LCD_SetFont(&Font16x24);
 				LCD_Draw_Castle();
 				LCD_Draw_Prisoner(k);
 
-				if (k >= 10)
-				{
+				if (k >= 10) {
 					LCD_Draw_Prisoner(k - 10);
 				}
 				osDelay(500);
-
 			}
 
-			LCD_DisplayString(70,140,"Victory!");
+			LCD_DisplayString(70, 140, "Victory!");
 
-			for(;;);
-
-
-
-
-
+			for (;;)
+				;
 		}
 
 		LCD_Draw_Castle();
 
-		if (platform_damage != 0)
-		{
-			LCD_Draw_Platform_Damage(platform_damage); //platform_damage
-		}
-		else
-		{
+		if (platform_damage != 0) {
+			LCD_Draw_Platform_Damage(platform_damage);	//platform_damage
+		} else {
 			LCD_Clear(0, LCD_COLOR_WHITE);
 			LCD_SetTextColor(LCD_COLOR_BLACK);
 			LCD_SetFont(&Font16x24);
-			LCD_DisplayString(70,140,"Defeated");
+			LCD_DisplayString(70, 140, "Defeated");
 
-			for(;;);
+			for (;;)
+				;
 		}
-
 
 		LCD_Draw_Capasitor_Charge(charge);
 
-		if (hit_castle_flag == 1)
-		{
+		if (hit_castle_flag == 1) {
 			chunk1(hit_castle_x_position, hit_castle_y_position, hit_castle_change);
 			chunk2(hit_castle_x_position, hit_castle_y_position, hit_castle_change);
 			hit_castle_flag = 0;
@@ -652,30 +566,23 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 		charge = total_charge;
 		osMutexRelease(time_stamp_mutex_id);
 
-		if (force_shield == 1)
-		{
+		if (force_shield == 1) {
 			LCD_Draw_Force_Shield(last_g_position);
 		}
 
-		if (force_shield == 1 && (charge - 5) > 0)
-		{
+		if (force_shield == 1 && (charge - 5) > 0) {
 			osMutexAcquire(time_stamp_mutex_id, osWaitForever);
 			total_charge -= 1;
 			osMutexRelease(time_stamp_mutex_id);
-		}
-		else
-		{
+		} else {
 			force_shield = 0;
 		}
 
-		if (((charge + time_stamp) < 50) && (rail_gun_done == 1 || force_shield == 0))
-		{
+		if (((charge + time_stamp) < 50) && (rail_gun_done == 1 || force_shield == 0)) {
 			osMutexAcquire(time_stamp_mutex_id, osWaitForever);
 			total_charge += 1;
 			osMutexRelease(time_stamp_mutex_id);
 		}
-
-
 
 		if (satchel_y_position < 20) {
 			satchel_flag = 0;
@@ -684,8 +591,7 @@ __NO_RETURN void lcd_display_thread(void *argument) {
 
 		time_stamp += 1;
 
-
-//		osDelay(100);
+		//		osDelay(100);
 	}
 }
 void ApplicationInit(void) {
@@ -701,20 +607,17 @@ void ApplicationInit(void) {
 	lcd_display_thread_id = osThreadNew(lcd_display_thread, NULL, &lcd_display_thread_attr);
 	physics_thread_id = osThreadNew(physics_thread, NULL, &physics_thread_attr);
 	gyro_thread_id = osThreadNew(gyro_thread, NULL, &gyro_thread_attr);
-//	satchel_thread_id = osThreadNew(satchel_thread, NULL, &satchel_thread_attr);
+	//	satchel_thread_id = osThreadNew(satchel_thread, NULL, &satchel_thread_attr);
 
 	gyro_semaphore_id = osSemaphoreNew(1U, 1U, NULL);
 
 	satchel_semaphore = osSemaphoreNew(1U, 1U, NULL);
 
-//	physics_message_id = osMessageQueueNew(1, sizeof(PHYSICS_MSGQUEUE_OBJ_t), NULL);
+	//	physics_message_id = osMessageQueueNew(1, sizeof(PHYSICS_MSGQUEUE_OBJ_t), NULL);
 
 	time_stamp_mutex_id = osMutexNew(&time_stamp_Mutex_attr);
-	timer_id = osTimerNew(Timer_Callback, osTimerPeriodic, (void*) 0,&timer_attr); //
+	timer_id = osTimerNew(Timer_Callback, osTimerPeriodic, (void *)0, &timer_attr);	 //
 	osTimerStart(timer_id, 100);
-
-
-
 
 	gpio_evt_id = osEventFlagsNew(NULL);
 }
@@ -741,10 +644,9 @@ void EXTI0_IRQHandler(void) {
 	HAL_NVIC_DisableIRQ(EXTI0_IRQn);
 	HAL_EXTI_ClearPending(EXTI_GPIOA, EXTI_TRIGGER_RISING_FALLING);
 	uint32_t ret = osEventFlagsSet(gpio_evt_id, BUTTON_EVENT);
-	if (ret != BUTTON_EVENT)
-	{
-		for(;;);
+	if (ret != BUTTON_EVENT) {
+		for (;;)
+			;
 	}
 	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 }
-
